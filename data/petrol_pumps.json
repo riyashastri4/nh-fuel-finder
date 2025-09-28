@@ -1,0 +1,152 @@
+[
+  {
+    "id": "hp-001",
+    "name": "HP Petrol Pump - Thane East",
+    "highway": "NH48",
+    "location": "Mumbai-Pune Highway, Thane East, Maharashtra",
+    "latitude": 19.2183,
+    "longitude": 72.9781,
+    "hours": "24/7",
+    "services": ["Petrol", "Diesel", "CNG", "ATM", "Restroom", "Cafeteria", "Air/Water"]
+  },
+  {
+    "id": "ioc-002",
+    "name": "Indian Oil Petrol Station - Sriperumbudur",
+    "highway": "NH44",
+    "location": "Chennai-Bangalore Highway, Sriperumbudur, Tamil Nadu",
+    "latitude": 12.9675,
+    "longitude": 79.9439,
+    "hours": "5:00 AM - 11:00 PM",
+    "services": ["Petrol", "Diesel", "Restroom", "Tyre Service", "Air/Water"]
+  },
+  {
+    "id": "bp-003",
+    "name": "Bharat Petroleum - Vadodara",
+    "highway": "NH48",
+    "location": "Ahmedabad-Mumbai Highway, Vadodara, Gujarat",
+    "latitude": 22.3072,
+    "longitude": 73.1812,
+    "hours": "6:00 AM - 10:00 PM",
+    "services": ["Petrol", "Diesel", "ATM", "Restroom", "Cafeteria"]
+  },
+  {
+    "id": "hp-004",
+    "name": "HP Service Station - Gwalior",
+    "highway": "NH44",
+    "location": "Delhi-Chennai Highway, Gwalior, Madhya Pradesh",
+    "latitude": 26.2183,
+    "longitude": 78.1828,
+    "hours": "24/7",
+    "services": ["Petrol", "Diesel", "CNG", "ATM", "Restroom", "Tyre Service", "Air/Water"]
+  },
+  {
+    "id": "ioc-005",
+    "name": "Indian Oil Station - Silchar",
+    "highway": "NH27",
+    "location": "Porbandar-Silchar Highway, Silchar, Assam",
+    "latitude": 24.8333,
+    "longitude": 92.7789,
+    "hours": "6:00 AM - 9:00 PM",
+    "services": ["Petrol", "Diesel", "Restroom", "Air/Water"]
+  },
+  {
+    "id": "rel-006",
+    "name": "Reliance Petrol Pump - Rajkot",
+    "highway": "NH27",
+    "location": "Porbandar-Silchar Highway, Rajkot, Gujarat",
+    "latitude": 22.3039,
+    "longitude": 70.8022,
+    "hours": "24/7",
+    "services": ["Petrol", "Diesel", "ATM", "Restroom", "Cafeteria", "Convenience Store"]
+  },
+  {
+    "id": "bp-007",
+    "name": "Bharat Petroleum - Vijayawada",
+    "highway": "NH16",
+    "location": "Chennai-Nizamabad Highway, Vijayawada, Andhra Pradesh",
+    "latitude": 16.5062,
+    "longitude": 80.6480,
+    "hours": "5:30 AM - 11:30 PM",
+    "services": ["Petrol", "Diesel", "CNG", "Restroom", "Air/Water"]
+  },
+  {
+    "id": "hp-008",
+    "name": "HP Petrol Station - Mangalore",
+    "highway": "NH66",
+    "location": "Mumbai-Kanyakumari Highway, Mangalore, Karnataka",
+    "latitude": 12.9141,
+    "longitude": 74.8560,
+    "hours": "24/7",
+    "services": ["Petrol", "Diesel", "ATM", "Restroom", "Cafeteria", "Tyre Service"]
+  },
+  {
+    "id": "ioc-009",
+    "name": "Indian Oil - Kozhikode",
+    "highway": "NH66",
+    "location": "Mumbai-Kanyakumari Highway, Kozhikode, Kerala",
+    "latitude": 11.2588,
+    "longitude": 75.7804,
+    "hours": "6:00 AM - 10:00 PM",
+    "services": ["Petrol", "Diesel", "Restroom", "Air/Water", "Convenience Store"]
+  },
+  {
+    "id": "rel-010",
+    "name": "Reliance Fuel Station - Panvel",
+    "highway": "NH48",
+    "location": "Mumbai-Pune Highway, Panvel, Maharashtra",
+    "latitude": 18.9894,
+    "longitude": 73.1106,
+    "hours": "24/7",
+    "services": ["Petrol", "Diesel", "CNG", "ATM", "Restroom", "Cafeteria", "Car Wash"]
+  },
+  {
+    "id": "bp-011",
+    "name": "Bharat Petroleum - Kanchipuram",
+    "highway": "NH44",
+    "location": "Chennai-Bangalore Highway, Kanchipuram, Tamil Nadu",
+    "latitude": 12.8342,
+    "longitude": 79.7036,
+    "hours": "5:00 AM - 11:00 PM",
+    "services": ["Petrol", "Diesel", "Restroom", "Air/Water"]
+  },
+  {
+    "id": "hp-012",
+    "name": "HP Service Centre - Nashik",
+    "highway": "NH48",
+    "location": "Mumbai-Delhi Highway, Nashik, Maharashtra",
+    "latitude": 19.9975,
+    "longitude": 73.7898,
+    "hours": "24/7",
+    "services": ["Petrol", "Diesel", "CNG", "ATM", "Restroom", "Cafeteria", "Tyre Service", "Car Wash"]
+  },
+  {
+    "id": "ioc-013",
+    "name": "Indian Oil Pump - Warangal",
+    "highway": "NH16",
+    "location": "Chennai-Nizamabad Highway, Warangal, Telangana",
+    "latitude": 17.9689,
+    "longitude": 79.5941,
+    "hours": "6:00 AM - 10:30 PM",
+    "services": ["Petrol", "Diesel", "Restroom", "Air/Water", "Tyre Service"]
+  },
+  {
+    "id": "rel-014",
+    "name": "Reliance Petrol Station - Jodhpur",
+    "highway": "NH27",
+    "location": "Porbandar-Silchar Highway, Jodhpur, Rajasthan",
+    "latitude": 26.2389,
+    "longitude": 73.0243,
+    "hours": "24/7",
+    "services": ["Petrol", "Diesel", "ATM", "Restroom", "Cafeteria", "Convenience Store", "Air/Water"]
+  },
+  {
+    "id": "bp-015",
+    "name": "Bharat Petroleum - Udupi",
+    "highway": "NH66",
+    "location": "Mumbai-Kanyakumari Highway, Udupi, Karnataka",
+    "latitude": 13.3409,
+    "longitude": 74.7421,
+    "hours": "5:30 AM - 11:00 PM",
+    "services": ["Petrol", "Diesel", "Restroom", "Cafeteria", "Air/Water"]
+  }
+]

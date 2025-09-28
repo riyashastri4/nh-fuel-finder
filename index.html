@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NH Fuel Finder - Locate Petrol Pumps on National Highways</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🛣️ NH Fuel Finder</h1>
+            <p>Find the nearest petrol pump along India's National Highways</p>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Controls Section -->
+            <section class="controls">
+                <button id="locate-btn" class="btn btn-primary">
+                    📍 Find My Location
+                </button>
+                <select id="highway-filter" class="highway-select">
+                    <option value="">All National Highways</option>
+                    <option value="NH44">NH44 (Chennai - Srinagar)</option>
+                    <option value="NH48">NH48 (Chennai - Delhi)</option>
+                    <option value="NH27">NH27 (Porbandar - Silchar)</option>
+                    <option value="NH16">NH16 (Chennai - Nizamabad)</option>
+                    <option value="NH66">NH66 (Mumbai - Kanyakumari)</option>
+                </select>
+            </section>
+
+            <!-- Map Section -->
+            <section class="map-container">
+                <div id="map"></div>
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Finding your location...</p>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results">
+                <div id="nearest-station" class="station-card hidden">
+                    <h3>🏪 Nearest Station</h3>
+                    <div id="station-details"></div>
+                </div>
+                
+                <div id="stations-list" class="stations-list">
+                    <h3>📋 All Stations</h3>
+                    <div id="stations-container"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 NH Fuel Finder. Built for travelers on India's National Highways.</p>
+        </div>
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <!-- Custom JS -->
+    <script src="src/app.js"></script>
+</body>
+</html>
