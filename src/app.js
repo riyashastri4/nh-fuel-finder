@@ -14,9 +14,6 @@ class FuelFinder {
         // Initialize map
         this.initMap();
         
-        // Load station data
-        await this.loadStations();
-        
         // Set up event listeners
         this.setupEventListeners();
         
@@ -40,17 +37,6 @@ class FuelFinder {
         });
     }
     
-    async loadStations() {
-        try {
-            const response = await fetch('data/petrol_pumps.json');
-            this.stations = await response.json();
-        } catch (error) {
-            console.error('Error loading station data:', error);
-            // Use fallback data if file doesn't exist
-            this.stations = [];
-        }
-    }
-    
     setupEventListeners() {
         // Locate button
         document.getElementById('locate-btn').addEventListener('click', () => {
@@ -61,6 +47,80 @@ class FuelFinder {
         document.getElementById('highway-filter').addEventListener('change', (e) => {
             this.filterByHighway(e.target.value);
         });
+
+        // City search
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const city = document.getElementById('city-search').value;
+            if(city) {
+                this.searchByCity(city);
+            }
+        });
+    }
+
+    searchByCity(city) {
+        const loadingEl = document.getElementById('loading');
+        loadingEl.classList.remove('hidden');
+
+        // Geocode the city to get its bounding box
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${city}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const boundingbox = data[0].boundingbox;
+                    this.fetchPetrolPumps(boundingbox);
+                } else {
+                    alert('City not found!');
+                    loadingEl.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error searching for city:', error);
+                alert('An error occurred while searching for the city.');
+                loadingEl.classList.add('hidden');
+            });
+    }
+
+    fetchPetrolPumps(bbox) {
+        const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node["amenity"="fuel"](${bbox[0]},${bbox[2]},${bbox[1]},${bbox[3]});out;`;
+        
+        fetch(overpassUrl)
+            .then(response => response.json())
+            .then(data => {
+                this.stations = data.elements.map(element => ({
+                    id: element.id,
+                    name: element.tags.name || 'Petrol Pump',
+                    highway: element.tags.highway || 'N/A',
+                    location: element.tags["addr:full"] || 'Address not available',
+                    latitude: element.lat,
+                    longitude: element.lon,
+                    hours: element.tags.opening_hours || 'N/A',
+                    services: this.getServices(element.tags)
+                }));
+                this.displayStations();
+                if (this.stations.length > 0) {
+                    // Zoom to the first station
+                    this.map.setView([this.stations[0].latitude, this.stations[0].longitude], 12);
+                }
+                document.getElementById('loading').classList.add('hidden');
+            })
+            .catch(error => {
+                console.error('Error fetching petrol pumps:', error);
+                alert('Could not fetch petrol pump data.');
+                document.getElementById('loading').classList.add('hidden');
+            });
+    }
+
+    getServices(tags) {
+        const services = [];
+        if (tags.fuel_diesel === 'yes') services.push('Diesel');
+        if (tags.fuel_petrol === 'yes' || tags.fuel_octane_95 === 'yes' || tags.fuel_octane_98 === 'yes' ) services.push('Petrol');
+        if (tags.fuel_cng === 'yes') services.push('CNG');
+        if (tags.fuel_lpg === 'yes') services.push('LPG');
+        if (tags.charging_station === 'yes') services.push('Electric Vehicle Charging');
+        if (tags.atm === 'yes') services.push('ATM');
+        if (tags.toilets === 'yes') services.push('Restroom');
+        if (tags.car_wash === 'yes') services.push('Car Wash');
+        return services;
     }
     
     getUserLocation() {
@@ -236,9 +296,13 @@ class FuelFinder {
             ? [...this.stations].sort((a, b) => (a.distance || 0) - (b.distance || 0))
             : this.stations;
         
-        container.innerHTML = sortedStations.map(station => 
-            this.createStationHTML(station)
-        ).join('');
+        if (sortedStations.length === 0) {
+            container.innerHTML = '<p>No stations found for this area. Try another search.</p>';
+        } else {
+            container.innerHTML = sortedStations.map(station => 
+                this.createStationHTML(station)
+            ).join('');
+        }
         
         // Add station markers to map
         this.clearMarkers();
