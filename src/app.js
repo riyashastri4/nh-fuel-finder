@@ -6,52 +6,40 @@ class FuelFinder {
         this.stations = [];
         this.markers = [];
         this.userMarker = null;
-        
+        this.searchCenter = null; // To store the center of a city search
+
         this.init();
     }
-    
+
     async init() {
-        // Initialize map
         this.initMap();
-        
-        // Set up event listeners
         this.setupEventListeners();
-        
-        // Display all stations initially
         this.displayStations();
     }
-    
+
     initMap() {
-        // Initialize Leaflet map centered on India
         this.map = L.map('map').setView([20.5937, 78.9629], 5);
-        
-        // Add OpenStreetMap tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 18
         }).addTo(this.map);
-        
-        // Add map click handler to hide loading spinner
         this.map.on('load', () => {
             document.getElementById('loading').classList.add('hidden');
         });
     }
-    
+
     setupEventListeners() {
-        // Locate button
         document.getElementById('locate-btn').addEventListener('click', () => {
             this.getUserLocation();
         });
-        
-        // Highway filter
+
         document.getElementById('highway-filter').addEventListener('change', (e) => {
             this.filterByHighway(e.target.value);
         });
 
-        // City search
         document.getElementById('search-btn').addEventListener('click', () => {
             const city = document.getElementById('city-search').value;
-            if(city) {
+            if (city) {
                 this.searchByCity(city);
             }
         });
@@ -61,13 +49,17 @@ class FuelFinder {
         const loadingEl = document.getElementById('loading');
         loadingEl.classList.remove('hidden');
 
-        // Geocode the city to get its bounding box
+        // Geocode the city to get its coordinates and bounding box
         fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${city}`)
             .then(response => response.json())
             .then(data => {
                 if (data && data.length > 0) {
+                    this.searchCenter = { // Store city center for fallback
+                        lat: parseFloat(data[0].lat),
+                        lon: parseFloat(data[0].lon)
+                    };
                     const boundingbox = data[0].boundingbox;
-                    this.fetchPetrolPumps(boundingbox);
+                    this.fetchPetrolPumpsInBbox(boundingbox);
                 } else {
                     alert('City not found!');
                     loadingEl.classList.add('hidden');
@@ -80,40 +72,84 @@ class FuelFinder {
             });
     }
 
-    fetchPetrolPumps(bbox) {
+    fetchPetrolPumpsInBbox(bbox) {
         const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node["amenity"="fuel"](${bbox[0]},${bbox[2]},${bbox[1]},${bbox[3]});out;`;
-        
+
         fetch(overpassUrl)
             .then(response => response.json())
             .then(data => {
-                this.stations = data.elements.map(element => ({
-                    id: element.id,
-                    name: element.tags.name || 'Petrol Pump',
-                    highway: element.tags.highway || 'N/A',
-                    location: element.tags["addr:full"] || 'Address not available',
-                    latitude: element.lat,
-                    longitude: element.lon,
-                    hours: element.tags.opening_hours || 'N/A',
-                    services: this.getServices(element.tags)
-                }));
-                this.displayStations();
-                if (this.stations.length > 0) {
-                    // Zoom to the first station
-                    this.map.setView([this.stations[0].latitude, this.stations[0].longitude], 12);
+                if (data.elements.length > 0) {
+                    this.stations = this.processOverpassData(data);
+                    this.displayStations();
+                    if (this.stations.length > 0) {
+                        this.map.setView([this.stations[0].latitude, this.stations[0].longitude], 12);
+                    }
+                    document.getElementById('loading').classList.add('hidden');
+                } else {
+                    // If no stations are in the bounding box, search by expanding radius
+                    this.fetchPetrolPumpsByRadius();
                 }
-                document.getElementById('loading').classList.add('hidden');
             })
             .catch(error => {
-                console.error('Error fetching petrol pumps:', error);
+                console.error('Error fetching petrol pumps in bbox:', error);
                 alert('Could not fetch petrol pump data.');
                 document.getElementById('loading').classList.add('hidden');
             });
     }
 
+    fetchPetrolPumpsByRadius(radius = 20000, attempt = 1) { // Start with a 20km radius
+        const MAX_ATTEMPTS = 5; // Try up to 5 times, doubling the radius each time
+        if (attempt > MAX_ATTEMPTS || !this.searchCenter) {
+            document.getElementById('loading').classList.add('hidden');
+            const container = document.getElementById('stations-container');
+            container.innerHTML = '<p>Could not find any stations, even after expanding the search.</p>';
+            return;
+        }
+
+        const overpassQuery = `[out:json];node(around:${radius},${this.searchCenter.lat},${this.searchCenter.lon})["amenity"="fuel"];out;`;
+        const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+
+        fetch(overpassUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.elements.length > 0) {
+                    this.stations = this.processOverpassData(data);
+                    // Set the "user location" to the city center for distance sorting
+                    this.userLocation = {
+                        lat: this.searchCenter.lat,
+                        lng: this.searchCenter.lon
+                    };
+                    this.findNearestStation(); // Calculate distances and find the nearest
+                    document.getElementById('loading').classList.add('hidden');
+                } else {
+                    // No stations found, expand the radius and try again
+                    this.fetchPetrolPumpsByRadius(radius * 2, attempt + 1);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching petrol pumps by radius:', error);
+                document.getElementById('loading').classList.add('hidden');
+            });
+    }
+
+    processOverpassData(data) {
+        return data.elements.map(element => ({
+            id: element.id,
+            name: element.tags.name || 'Petrol Pump',
+            highway: element.tags.highway || 'N/A',
+            location: element.tags["addr:full"] || 'Address not available',
+            latitude: element.lat,
+            longitude: element.lon,
+            hours: element.tags.opening_hours || 'N/A',
+            services: this.getServices(element.tags)
+        }));
+    }
+
+
     getServices(tags) {
         const services = [];
         if (tags.fuel_diesel === 'yes') services.push('Diesel');
-        if (tags.fuel_petrol === 'yes' || tags.fuel_octane_95 === 'yes' || tags.fuel_octane_98 === 'yes' ) services.push('Petrol');
+        if (tags.fuel_petrol === 'yes' || tags.fuel_octane_95 === 'yes' || tags.fuel_octane_98 === 'yes') services.push('Petrol');
         if (tags.fuel_cng === 'yes') services.push('CNG');
         if (tags.fuel_lpg === 'yes') services.push('LPG');
         if (tags.charging_station === 'yes') services.push('Electric Vehicle Charging');
@@ -122,24 +158,24 @@ class FuelFinder {
         if (tags.car_wash === 'yes') services.push('Car Wash');
         return services;
     }
-    
+
     getUserLocation() {
         const loadingEl = document.getElementById('loading');
         loadingEl.classList.remove('hidden');
-        
+
         if (!navigator.geolocation) {
             alert('Geolocation is not supported by this browser.');
             loadingEl.classList.add('hidden');
             return;
         }
-        
+
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 this.userLocation = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
-                
+
                 this.showUserOnMap();
                 this.findNearestStation();
                 loadingEl.classList.add('hidden');
@@ -148,63 +184,58 @@ class FuelFinder {
                 console.error('Error getting location:', error);
                 alert('Unable to get your location. Please ensure location services are enabled.');
                 loadingEl.classList.add('hidden');
-            },
-            {
+            }, {
                 enableHighAccuracy: true,
                 timeout: 10000,
-                maximumAge: 600000 // 10 minutes
+                maximumAge: 600000
             }
         );
     }
-    
+
     showUserOnMap() {
         if (this.userMarker) {
             this.map.removeLayer(this.userMarker);
         }
-        
-        // Add user marker
+
         const userIcon = L.divIcon({
             className: 'user-marker',
             html: '📍',
             iconSize: [30, 30],
             iconAnchor: [15, 15]
         });
-        
+
         this.userMarker = L.marker([this.userLocation.lat, this.userLocation.lng], {
             icon: userIcon
         }).addTo(this.map);
-        
+
         this.userMarker.bindPopup('You are here').openPopup();
-        
-        // Center map on user location
         this.map.setView([this.userLocation.lat, this.userLocation.lng], 10);
     }
-    
+
     calculateDistance(lat1, lng1, lat2, lng2) {
-        // Haversine formula to calculate distance between two points
-        const R = 6371; // Earth's radius in kilometers
+        const R = 6371;
         const dLat = this.toRad(lat2 - lat1);
         const dLng = this.toRad(lng2 - lng1);
         const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
-    
+
     toRad(degrees) {
         return degrees * (Math.PI / 180);
     }
-    
+
     findNearestStation() {
         if (!this.userLocation || this.stations.length === 0) {
+            this.displayStations(); // Still need to display the (potentially sorted) list
             return;
         }
-        
-        // Calculate distances and find nearest station
+
         let nearestStation = null;
         let minDistance = Infinity;
-        
+
         this.stations.forEach(station => {
             const distance = this.calculateDistance(
                 this.userLocation.lat,
@@ -212,70 +243,57 @@ class FuelFinder {
                 station.latitude,
                 station.longitude
             );
-            
             station.distance = distance;
-            
             if (distance < minDistance) {
                 minDistance = distance;
                 nearestStation = station;
             }
         });
-        
+
         if (nearestStation) {
             this.displayNearestStation(nearestStation);
         }
-        
-        // Re-display stations with updated distances
+
         this.displayStations();
     }
-    
+
     displayNearestStation(station) {
         const nearestEl = document.getElementById('nearest-station');
         const detailsEl = document.getElementById('station-details');
-        
         detailsEl.innerHTML = this.createStationHTML(station, true);
         nearestEl.classList.remove('hidden');
-        
-        // Highlight on map
         this.highlightStationOnMap(station);
     }
-    
+
     highlightStationOnMap(station) {
-        // Remove existing markers
         this.clearMarkers();
-        
-        // Add markers for all stations
         this.addStationMarkers();
-        
-        // Find and highlight the nearest station marker
-        const nearestMarker = this.markers.find(marker => 
+        const nearestMarker = this.markers.find(marker =>
             marker.options.stationId === station.id
         );
-        
         if (nearestMarker) {
             nearestMarker.openPopup();
             this.map.setView([station.latitude, station.longitude], 12);
         }
     }
-    
+
     clearMarkers() {
         this.markers.forEach(marker => {
             this.map.removeLayer(marker);
         });
         this.markers = [];
     }
-    
+
     addStationMarkers() {
         this.stations.forEach(station => {
             const marker = L.marker([station.latitude, station.longitude], {
                 stationId: station.id
             }).addTo(this.map);
-            
             marker.bindPopup(this.createStationPopup(station));
             this.markers.push(marker);
         });
     }
-    
+
     createStationPopup(station) {
         return `
             <div class="popup-content">
@@ -287,33 +305,29 @@ class FuelFinder {
             </div>
         `;
     }
-    
+
     displayStations() {
         const container = document.getElementById('stations-container');
-        
-        // Sort by distance if user location is available
-        const sortedStations = this.userLocation 
-            ? [...this.stations].sort((a, b) => (a.distance || 0) - (b.distance || 0))
-            : this.stations;
-        
+        const sortedStations = this.userLocation ?
+            [...this.stations].sort((a, b) => (a.distance || 0) - (b.distance || 0)) :
+            this.stations;
+
         if (sortedStations.length === 0) {
-            container.innerHTML = '<p>No stations found for this area. Try another search.</p>';
+            container.innerHTML = '<p>Enter a city to begin your search.</p>';
         } else {
-            container.innerHTML = sortedStations.map(station => 
+            container.innerHTML = sortedStations.map(station =>
                 this.createStationHTML(station)
             ).join('');
         }
-        
-        // Add station markers to map
+
         this.clearMarkers();
         this.addStationMarkers();
     }
-    
+
     createStationHTML(station, isNearest = false) {
-        const distanceText = station.distance 
-            ? `<span class="station-distance">${station.distance.toFixed(1)} km away</span>`
-            : '';
-            
+        const distanceText = station.distance ?
+            `<span class="station-distance">${station.distance.toFixed(1)} km away</span>` :
+            '';
         return `
             <div class="station-item">
                 <div class="station-name">${station.name} ${distanceText}</div>
@@ -321,25 +335,22 @@ class FuelFinder {
                 <div class="station-location">${station.location}</div>
                 <div class="station-hours">⏰ ${station.hours}</div>
                 <div class="station-services">
-                    ${station.services.map(service => 
+                    ${station.services.map(service =>
                         `<span class="service-tag">${service}</span>`
                     ).join('')}
                 </div>
             </div>
         `;
     }
-    
+
     filterByHighway(highway) {
         if (!highway) {
             this.displayStations();
             return;
         }
-        
-        const filtered = this.stations.filter(station => 
+        const filtered = this.stations.filter(station =>
             station.highway === highway
         );
-        
-        // Temporarily replace stations for display
         const originalStations = this.stations;
         this.stations = filtered;
         this.displayStations();
@@ -347,7 +358,6 @@ class FuelFinder {
     }
 }
 
-// Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new FuelFinder();
 });
